@@ -1,0 +1,17 @@
+{
+    "name": "mathematicus.blas",
+    "version": "1.0.0",
+    "description": "Native module calculating estimate of PI",
+    "dependencies": {
+        "bindings": "^1.3.0",
+        "cmake-js": "^3.7.1",
+        "nan": "^2.10.0"
+    },
+    "scripts": {
+        "install": "cmake-js compile --debug",
+        "test": "mocha ./tests"
+    },
+    "devDependencies": {
+        "mocha": "^5.1.1"
+    }
+}

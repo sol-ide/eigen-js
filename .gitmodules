@@ -1,0 +1,4 @@
+[submodule "src/eigen"]
+	path = src/eigen
+	url = https://github.com/sol-ide/eigen-git-mirror.git
+	branch = master
