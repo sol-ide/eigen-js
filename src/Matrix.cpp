@@ -12,7 +12,7 @@ Matrix::Matrix(std::size_t rows, std::size_t columns, const double* data)
     std::memcpy(
       matrix_->data(),
       data,
-      rows * columns
+      (rows * columns)*sizeof(EigenMatrix::value_type)
     );
   }
 }
@@ -53,6 +53,8 @@ NAN_MODULE_INIT(Matrix::Init)
 
   Nan::SetAccessor(ctor->InstanceTemplate(), Nan::New("rows").ToLocalChecked(), HandleRows);
   Nan::SetAccessor(ctor->InstanceTemplate(), Nan::New("columns").ToLocalChecked(), HandleColumns);
+
+  Nan::SetPrototypeMethod(ctor, "toString", ToString);
 
   target->Set(Nan::New("Matrix").ToLocalChecked(), ctor->GetFunction());
 }
@@ -102,12 +104,42 @@ NAN_METHOD(Matrix::New) {
   info.GetReturnValue().Set(info.Holder());
 }
 
-NAN_PROPERTY_GETTER(Matrix::HandleRows) {
+NAN_METHOD(Matrix::ToString)
+{
+  Matrix* self = Nan::ObjectWrap::Unwrap<Matrix>(info.This());
+  std::ostringstream oss;
+  const auto rows = self->matrix_->rows();
+  const auto columns = self->matrix_->cols();
+
+  for (Eigen::Index indexRow = 0; indexRow < rows; ++indexRow)
+  {
+    if (indexRow > 0)
+    {
+      oss << std::endl;
+    }
+
+    const auto& row = self->matrix_->row(indexRow);
+    for (Eigen::Index indexColumn = 0; indexColumn < columns; ++indexColumn)
+    {
+      if (indexColumn > 0)
+      {
+        oss << " ";
+      }
+      oss << row(indexColumn);
+    }
+  }
+  v8::MaybeLocal<v8::String> string = v8::String::NewFromUtf8(info.GetIsolate(), oss.str().c_str(), v8::NewStringType::kNormal);
+  info.GetReturnValue().Set(string.ToLocalChecked());
+}
+
+NAN_PROPERTY_GETTER(Matrix::HandleRows)
+{
     Matrix* self = Nan::ObjectWrap::Unwrap<Matrix>(info.This());
     info.GetReturnValue().Set(self->GetRows());
 }
 
-NAN_PROPERTY_GETTER(Matrix::HandleColumns) {
+NAN_PROPERTY_GETTER(Matrix::HandleColumns)
+{
     Matrix* self = Nan::ObjectWrap::Unwrap<Matrix>(info.This());
     info.GetReturnValue().Set(self->GetColumns());
 }

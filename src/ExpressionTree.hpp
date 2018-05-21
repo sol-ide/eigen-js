@@ -10,6 +10,7 @@ public:
   static NAN_MODULE_INIT(Init);
   static NAN_METHOD(New);
   static NAN_METHOD(Eval);
+  static NAN_METHOD(Then);
 
   void SetExpr(AbstractExpressionPtr expr);
   AbstractExpressionPtr GetExpr() const;

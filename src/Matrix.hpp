@@ -19,6 +19,7 @@ public:
   static NAN_GETTER(HandleColumns);
 
   static NAN_METHOD(New);
+  static NAN_METHOD(ToString);
 
   static Nan::Persistent<v8::FunctionTemplate> constructor;
 

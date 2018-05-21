@@ -1,38 +1,71 @@
 
-var eigen = require("bindings")("EigenJs");
+const expect = require( "chai" ).expect
+const eigen = require("bindings")("EigenJs");
 
-const m1 = new eigen.Matrix(
-  3, 3,
-  new Float64Array([
-    1, 1, 1,
-    2, 2, 2,
-    3, 3, 3
-  ])
-);
+describe("Basic Matrix Binary Operations", () => {
+  it("Test for equality", () => {
+    const m1 = new eigen.Matrix(
+      3, 3,
+      new Float64Array([
+        1, 1, 1,
+        2, 2, 2,
+        3, 3, 3
+      ])
+    );
+    
+    const m2 = new eigen.Matrix(
+      3, 3,
+      new Float64Array([
+        3, 3, 3,
+        2, 2, 2,
+        1, 1, 1
+      ])
+    );
 
-const m2 = new eigen.Matrix(
-  3, 3,
-  new Float64Array([
-    3, 3, 3,
-    2, 2, 2,
-    1, 1, 1
-  ])
-);
+    const m3 = new eigen.Matrix(
+      3, 3,
+      new Float64Array([
+        1, 1, 1,
+        2, 2, 2,
+        3, 3, 3
+      ])
+    );
 
-const m3 = new eigen.Matrix(
-  3, 3,
-  new Float64Array([
-    1, 0, 0,
-    0, 1, 0,
-    0, 0, 1
-  ])
-);
+    expect( eigen.equals(m1, m2).eval() );
+    expect( eigen.equals(m1, m3).eval() );
+  });
 
-eigen.multiply(
-  m1,
-  eigen.add( m2, m3 )
-).eval().then((m) => {
-  console.log( m1.rows );
-  console.log( m1.columns );
+  it("Adds two Matrix", () => {
+    const m1 = new eigen.Matrix(
+      3, 3,
+      new Float64Array([
+        1, 1, 1,
+        2, 2, 2,
+        3, 3, 3
+      ])
+    );
+    
+    const m2 = new eigen.Matrix(
+      3, 3,
+      new Float64Array([
+        3, 3, 3,
+        2, 2, 2,
+        1, 1, 1
+      ])
+    );
+
+    const result = eigen.add( m1, m2 ).eval();
+
+    const expected = new eigen.Matrix(
+      3, 3,
+      new Float64Array([
+        4, 4, 4,
+        4, 4, 4,
+        4, 4, 4
+      ])
+    );
+
+    expect( eigen.equals(result, expected).eval() );
+  });
 });
 
