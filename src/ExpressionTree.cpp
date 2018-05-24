@@ -61,7 +61,7 @@ public:
 private:
   virtual void Execute() override
   {
-    resultMatrix_ = expr_->Eval();
+    result_ = expr_->Eval();
   }
 
   void HandleOKCallback() {
@@ -69,15 +69,31 @@ private:
 
     v8::Local<v8::Promise::Resolver> resolver = GetFromPersistent(0U).As<v8::Promise::Resolver>();
 
-    const int argc = 2;
-    v8::Local<v8::Value> argv[argc] = { Nan::New(0), Nan::New(0) };
 
-    v8::Local<v8::Function> constructorFunc = Nan::New(Matrix::constructor)->GetFunction();
-    v8::Local<v8::Object> matrixJs = Nan::NewInstance(constructorFunc, argc, argv).ToLocalChecked();
-    Matrix* matrix = Nan::ObjectWrap::Unwrap<Matrix>(matrixJs);
-    matrix->SetInnerMatrix(resultMatrix_);
+    std::visit([resolver](auto&& result) {
+      using T = std::decay_t< decltype(result) >;
+      if constexpr(std::is_same < T, Matrix::EigenMatrixPtr >::value)
+      {
+        const int argc = 2;
+        v8::Local<v8::Value> argv[argc] = { Nan::New(0), Nan::New(0) };
 
-    resolver->Resolve(Nan::GetCurrentContext(), matrix->handle());
+        v8::Local<v8::Function> constructorFunc = Nan::New(Matrix::constructor)->GetFunction();
+        v8::Local<v8::Object> matrixJs = Nan::NewInstance(constructorFunc, argc, argv).ToLocalChecked();
+
+        Matrix* matrix = Nan::ObjectWrap::Unwrap<Matrix>(matrixJs);
+        matrix->SetInnerMatrix(result);
+        resolver->Resolve(Nan::GetCurrentContext(), matrix->handle());
+      }
+      else if constexpr(std::is_same< T, bool >::value)
+      {
+        resolver->Resolve(Nan::GetCurrentContext(), v8::Boolean::New(Nan::GetCurrentContext()->GetIsolate(), result) );
+      }
+      else
+      {
+        resolver->Resolve(Nan::GetCurrentContext(), v8::Number::New(Nan::GetCurrentContext()->GetIsolate(), result));
+      }
+    }, result_);
+
   }
 
   void HandleErrorCallback() {
@@ -87,24 +103,43 @@ private:
   }
 
   AbstractExpressionPtr expr_;
-  Matrix::EigenMatrixPtr resultMatrix_;
+  AbstractExpression::ExpressionVariant result_;
 };
 
 NAN_METHOD(ExpressionTree::Eval)
 {
   ExpressionTree* expression = Nan::ObjectWrap::Unwrap<ExpressionTree>(info.This());
 
-  const int argc = 2;
-  v8::Local<v8::Value> argv[argc] = { Nan::New(0), Nan::New(0) };
-
-  v8::Local<v8::Function> constructorFunc = Nan::New(Matrix::constructor)->GetFunction();
-  v8::Local<v8::Object> matrixJs = Nan::NewInstance(constructorFunc, argc, argv).ToLocalChecked();
-  Matrix* matrix = Nan::ObjectWrap::Unwrap<Matrix>(matrixJs);
-  
   AbstractExpressionPtr expr = expression->GetExpr();
-  matrix->SetInnerMatrix(expr->Eval());
 
-  info.GetReturnValue().Set(matrix->handle());
+  AbstractExpression::ExpressionVariant result = expr->Eval();
+
+  std::visit([&info](auto&& result) {
+    using T = std::decay_t< decltype(result) >;
+    if constexpr(std::is_same < T, Matrix::EigenMatrixPtr >::value)
+    {
+      const int argc = 2;
+      v8::Local<v8::Value> argv[argc] = { Nan::New(0), Nan::New(0) };
+
+      v8::Local<v8::Function> constructorFunc = Nan::New(Matrix::constructor)->GetFunction();
+      v8::Local<v8::Object> matrixJs = Nan::NewInstance(constructorFunc, argc, argv).ToLocalChecked();
+      Matrix* matrix = Nan::ObjectWrap::Unwrap<Matrix>(matrixJs);
+
+      matrix->SetInnerMatrix(result);
+
+      info.GetReturnValue().Set(matrix->handle());
+    }
+    else if constexpr(std::is_same< T, bool >::value)
+    {
+      info.GetReturnValue().Set(v8::Boolean::New(info.GetIsolate(), result));
+    }
+    else
+    {
+      info.GetReturnValue().Set(v8::Number::New(info.GetIsolate(), result));
+    }
+  }, result);
+
+
 }
 
 NAN_METHOD(ExpressionTree::Then)

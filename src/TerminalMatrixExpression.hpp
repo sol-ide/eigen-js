@@ -9,7 +9,7 @@ public:
 
   TerminalMatrixExpression(const Matrix::EigenMatrixPtr m);
 
-  virtual Matrix::EigenMatrixPtr Eval() const override;
+  virtual ExpressionVariant Eval() const override;
 
 private:
   const Matrix::EigenMatrixPtr m_;

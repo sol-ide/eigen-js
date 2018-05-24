@@ -8,4 +8,5 @@ namespace BinaryMatrixOperators
 }
 
 NAN_METHOD(Add);
-NAN_METHOD(Multiply);
+NAN_METHOD(Product);
+NAN_METHOD(Equals);

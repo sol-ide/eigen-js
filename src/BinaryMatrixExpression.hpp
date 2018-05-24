@@ -2,15 +2,17 @@
 
 #include "Matrix.hpp"
 #include "AbstractExpression.hpp"
+#include <variant>
 
 class BinaryMatrixExpression : public AbstractExpression
 {
 public:
-  using BinaryEvaluator = std::function<Matrix::EigenMatrix(const Matrix::EigenMatrix& lhs, const Matrix::EigenMatrix& rhs)>;
-public:
-  BinaryMatrixExpression(AbstractExpressionPtr lhs, AbstractExpressionPtr rhs, BinaryEvaluator evaluator);
+  using BinaryEvaluator = std::function<ExpressionVariant(const ExpressionVariant& lhs, const ExpressionVariant& rhs)>;
 
-  virtual Matrix::EigenMatrixPtr Eval() const override;
+public:
+  BinaryMatrixExpression(AbstractExpressionPtr lhs, AbstractExpressionPtr rhs, ExpressionType type, BinaryEvaluator evaluator);
+
+  virtual ExpressionVariant Eval() const override;
 
 private:
   AbstractExpressionPtr lhs_;

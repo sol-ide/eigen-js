@@ -17,12 +17,12 @@ Matrix::Matrix(std::size_t rows, std::size_t columns, const double* data)
   }
 }
 
-std::uint32_t Matrix::GetRows() const
+std::size_t Matrix::GetRows() const
 {
 	return matrix_->rows();
 }
 
-std::uint32_t Matrix::GetColumns() const
+std::size_t Matrix::GetColumns() const
 {
 	return matrix_->cols();
 }
@@ -135,11 +135,11 @@ NAN_METHOD(Matrix::ToString)
 NAN_PROPERTY_GETTER(Matrix::HandleRows)
 {
     Matrix* self = Nan::ObjectWrap::Unwrap<Matrix>(info.This());
-    info.GetReturnValue().Set(self->GetRows());
+    info.GetReturnValue().Set(v8::Number::New(info.GetIsolate(), self->GetRows()));
 }
 
 NAN_PROPERTY_GETTER(Matrix::HandleColumns)
 {
     Matrix* self = Nan::ObjectWrap::Unwrap<Matrix>(info.This());
-    info.GetReturnValue().Set(self->GetColumns());
+    info.GetReturnValue().Set(v8::Number::New(info.GetIsolate(), self->GetColumns()));
 }

@@ -1,5 +1,5 @@
 {
-    "name": "mathematicus.blas",
+    "name": "eigen.js",
     "version": "1.0.0",
     "description": "Native module calculating estimate of PI",
     "dependencies": {

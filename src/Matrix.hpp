@@ -7,7 +7,7 @@
 class Matrix : public Nan::ObjectWrap
 {
 public:
-  using EigenMatrix = Eigen::MatrixXd;
+  using EigenMatrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor | Eigen::AutoAlign>;
   using EigenMatrixPtr = std::shared_ptr<EigenMatrix>;
 public:
 
@@ -23,8 +23,8 @@ public:
 
   static Nan::Persistent<v8::FunctionTemplate> constructor;
 
-  std::uint32_t GetRows() const;
-  std::uint32_t GetColumns() const;
+  std::size_t GetRows() const;
+  std::size_t GetColumns() const;
 
   EigenMatrixPtr InnerMatrix();
   const EigenMatrixPtr InnerMatrix() const;

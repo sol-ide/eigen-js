@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 
 # Name of the project (will be the name of the plugin)
 project(EigenJs)
@@ -25,9 +25,4 @@ PRIVATE
 # You should add this line in every CMake.js based project
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 
-#target_link_libraries(${PROJECT_NAME} ${OpenBLAS_LIBNAME})
-
-#add_custom_command(TARGET ${PROJECT_NAME}
-#	POST_BUILD
-#	COMMAND ${CMAKE_COMMAND} -E copy $<$<TARGET_FILE_NAME:${OpenBLAS_LIBNAME}> ${CMAKE_CURRENT_BINARY_DIR}/.
-#)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
