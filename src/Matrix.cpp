@@ -17,6 +17,12 @@ Matrix::Matrix(std::size_t rows, std::size_t columns, const double* data)
   }
 }
 
+/* virtual */ const std::string& Matrix::GetName() const
+{
+  static const std::string name;
+  return name;
+}
+
 std::size_t Matrix::GetRows() const
 {
 	return matrix_->rows();
@@ -113,10 +119,12 @@ NAN_METHOD(Matrix::ToString)
 
   for (Eigen::Index indexRow = 0; indexRow < rows; ++indexRow)
   {
-    if (indexRow > 0)
+    if (indexRow == 0)
     {
-      oss << std::endl;
+      oss << self->GetName() << " : ";
     }
+    
+    oss << std::endl << '\t';
 
     const auto& row = self->matrix_->row(indexRow);
     for (Eigen::Index indexColumn = 0; indexColumn < columns; ++indexColumn)

@@ -12,7 +12,7 @@ public:
 public:
 
   Matrix(std::size_t rows, std::size_t columns, const double* data);
-
+  
   static NAN_MODULE_INIT(Init);
 
   static NAN_GETTER(HandleRows);
@@ -30,6 +30,9 @@ public:
   const EigenMatrixPtr InnerMatrix() const;
 
   void SetInnerMatrix(EigenMatrixPtr innerMatrix);
+
+
+  virtual const std::string& GetName() const;
 
 private:
   EigenMatrixPtr matrix_;
