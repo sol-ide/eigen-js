@@ -99,7 +99,7 @@ describe("Basic Matrix Binary Operations", () => {
     expect( expression ).to.throw();
   });
 
-  it("Matrix Product", () => {
+  it("Matrix/Matrix Product", () => {
     const m1 = new eigen.Matrix(
       3, 10,
       new Float64Array([
@@ -135,6 +135,59 @@ describe("Basic Matrix Binary Operations", () => {
         165, 165
       ])
     );
+
+
+    let expression = eigen.equals(result, expected);
+    expect( expression.eval() ).to.be.true;
+
+    expression.then((e)=> {
+      expect(e).to.be.true;
+    }).catch(()=>{
+      expect.fail();
+    });
+  });
+
+  it("Scalar/Matrix Product", () => {
+    const a = 3.0;
+
+    const m1 = new eigen.Matrix(
+      3, 10,
+      new Float64Array([
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+      ])
+    );
+    
+    const result = eigen.product( a, m1 );
+
+    const expected = new eigen.Matrix(
+      3, 10,
+      new Float64Array([
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 
+        9, 9, 9, 9, 9, 9, 9, 9, 9, 9
+      ])
+    );
+
+
+    let expression = eigen.equals(result, expected);
+    expect( expression.eval() ).to.be.true;
+
+    expression.then((e)=> {
+      expect(e).to.be.true;
+    }).catch(()=>{
+      expect.fail();
+    });
+  });
+
+  it("Scalar/Scalar Product", () => {
+    const a = 3.0;
+    const b = 4;
+    
+    const result = eigen.product( a, b );
+
+    const expected = a * b;
 
 
     let expression = eigen.equals(result, expected);

@@ -33,6 +33,13 @@ ExpressionType::InnerType ExpressionType::GetType() const
   return type_;
 }
 
+void ExpressionType::From(double scalar)
+{
+  rows_ = 1;
+  columns_ = 1;
+  type_ = InnerType::SCALAR_DOUBLE;
+}
+
 void ExpressionType::From(Matrix* m)
 {
   rows_ = m->GetRows();

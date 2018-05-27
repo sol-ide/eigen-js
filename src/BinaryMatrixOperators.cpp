@@ -2,7 +2,7 @@
 #include "Matrix.hpp"
 #include "BinaryMatrixOperators.hpp"
 #include "BinaryMatrixExpression.hpp"
-#include "TerminalMatrixExpression.hpp"
+#include "TerminalExpression.hpp"
 #include "ExpressionTree.hpp"
 #include "ExpressionType.hpp"
 
@@ -67,7 +67,7 @@ NAN_METHOD(Add)
   if (Nan::New(Matrix::constructor)->HasInstance(info[0]))
   {
     Matrix* m = Nan::ObjectWrap::Unwrap<Matrix>(info[0]->ToObject());
-    lhs = std::make_shared<TerminalMatrixExpression>(m->InnerMatrix());
+    lhs = std::make_shared<TerminalExpression>(m->InnerMatrix());
     lhsType.From(m);
   }
   else if (Nan::New(ExpressionTree::constructor)->HasInstance(info[0]))
@@ -82,7 +82,7 @@ NAN_METHOD(Add)
   if (Nan::New(Matrix::constructor)->HasInstance(info[1]))
   {
     Matrix* m = Nan::ObjectWrap::Unwrap<Matrix>(info[1]->ToObject());
-    rhs = std::make_shared<TerminalMatrixExpression>(m->InnerMatrix());
+    rhs = std::make_shared<TerminalExpression>(m->InnerMatrix());
     rhsType.From(m);
   }
   else if (Nan::New(ExpressionTree::constructor)->HasInstance(info[1]))
@@ -139,6 +139,26 @@ struct VisitProduct
     return std::make_shared<T>(*a * *b);
   }
 
+  template< typename U, typename T >
+  AbstractExpression::ExpressionVariant operator()(const U a, const std::shared_ptr<T>& b) const
+  {
+    if (!b)
+    {
+      return nullptr;
+    }
+    return std::make_shared<T>(a * *b);
+  }
+
+  template< typename U, typename T >
+  AbstractExpression::ExpressionVariant operator()(const std::shared_ptr<T>& a, const U b) const
+  {
+    if (!a)
+    {
+      return nullptr;
+    }
+    return std::make_shared<T>(b * *a);
+  }
+
   template< typename U, typename V >
   AbstractExpression::ExpressionVariant operator()(const U& a, const V& b) const
   {
@@ -152,12 +172,13 @@ NAN_METHOD(Product)
     return Nan::ThrowError(Nan::New("EigenJs.Prod - expected arguments lhs, rhs").ToLocalChecked());
   }
 
-  if (!Nan::New(Matrix::constructor)->HasInstance(info[0]) && !Nan::New(ExpressionTree::constructor)->HasInstance(info[0])) {
-    return Nan::ThrowError(Nan::New("EigenJs.Prod - expected lhs argument to be instance of Matrix").ToLocalChecked());
+
+  if (!Nan::New(Matrix::constructor)->HasInstance(info[0]) && !Nan::New(ExpressionTree::constructor)->HasInstance(info[0]) && !info[0]->IsNumber() ) {
+    return Nan::ThrowError(Nan::New("EigenJs.Prod - expected lhs argument to be instance of Matrix or Number").ToLocalChecked());
   }
 
-  if (!Nan::New(Matrix::constructor)->HasInstance(info[1]) && !Nan::New(ExpressionTree::constructor)->HasInstance(info[1])) {
-    return Nan::ThrowError(Nan::New("EigenJs.Prod - expected rhs argument to be instance of Matrix").ToLocalChecked());
+  if (!Nan::New(Matrix::constructor)->HasInstance(info[1]) && !Nan::New(ExpressionTree::constructor)->HasInstance(info[1]) && !info[1]->IsNumber()) {
+    return Nan::ThrowError(Nan::New("EigenJs.Prod - expected rhs argument to be instance of Matrix or Number").ToLocalChecked());
   }
 
   std::shared_ptr<AbstractExpression> lhs;
@@ -166,7 +187,7 @@ NAN_METHOD(Product)
   if (Nan::New(Matrix::constructor)->HasInstance(info[0]))
   {
     Matrix* m = Nan::ObjectWrap::Unwrap<Matrix>(info[0]->ToObject());
-    lhs = std::make_shared<TerminalMatrixExpression>(m->InnerMatrix());
+    lhs = std::make_shared<TerminalExpression>(m->InnerMatrix());
     lhsType.From(m);
   }
   else if (Nan::New(ExpressionTree::constructor)->HasInstance(info[0]))
@@ -175,13 +196,18 @@ NAN_METHOD(Product)
     lhs = tree->GetExpr();
     lhsType.From(tree);
   }
+  else if( info[0]->IsNumber())
+  {
+    lhs = std::make_shared<TerminalExpression>(info[0]->NumberValue());
+    lhsType.From(info[0]->NumberValue());
+  }
 
   std::shared_ptr<AbstractExpression> rhs;
   ExpressionType rhsType;
   if (Nan::New(Matrix::constructor)->HasInstance(info[1]))
   {
     Matrix* m = Nan::ObjectWrap::Unwrap<Matrix>(info[1]->ToObject());
-    rhs = std::make_shared<TerminalMatrixExpression>(m->InnerMatrix());
+    rhs = std::make_shared<TerminalExpression>(m->InnerMatrix());
     rhsType.From(m);
   }
   else if (Nan::New(ExpressionTree::constructor)->HasInstance(info[1]))
@@ -189,6 +215,11 @@ NAN_METHOD(Product)
     ExpressionTree* tree = Nan::ObjectWrap::Unwrap<ExpressionTree>(info[1]->ToObject());
     rhs = tree->GetExpr();
     rhsType.From(tree);
+  }
+  else if (info[1]->IsNumber())
+  {
+    rhs = std::make_shared<TerminalExpression>(info[1]->NumberValue());
+    rhsType.From(info[1]->NumberValue());
   }
 
   
@@ -200,6 +231,29 @@ NAN_METHOD(Product)
       lhs,
       rhs,
       type,
+      [](const auto& lhs, const auto& rhs) {
+        return std::visit(VisitProduct(), lhs, rhs);
+    });
+
+    v8::Local<v8::Function> constructorFunc = Nan::New(ExpressionTree::constructor)->GetFunction();
+    v8::Local<v8::Object> expJs = Nan::NewInstance(constructorFunc).ToLocalChecked();
+    ExpressionTree* tree = Nan::ObjectWrap::Unwrap<ExpressionTree>(expJs);
+    tree->SetExpr(exp);
+
+    info.GetReturnValue().Set(expJs);
+  }
+  else if (lhsType.GetType() == ExpressionType::InnerType::SCALAR_DOUBLE || rhsType.GetType() == ExpressionType::InnerType::SCALAR_DOUBLE)
+  {
+    ExpressionType* type = &lhsType;
+    if (lhsType.GetType() == ExpressionType::InnerType::SCALAR_DOUBLE)
+    {
+      type = &rhsType;
+    }
+
+    AbstractExpressionPtr exp = std::make_shared<BinaryMatrixExpression>(
+      lhs,
+      rhs,
+      *type,
       [](const auto& lhs, const auto& rhs) {
         return std::visit(VisitProduct(), lhs, rhs);
     });
@@ -245,15 +299,15 @@ struct VisitEquals
 NAN_METHOD(Equals)
 {
   if (info.Length() != 2) {
-    return Nan::ThrowError(Nan::New("EigenJs.Add - expected arguments lhs, rhs").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("EigenJs.Equals - expected arguments lhs, rhs").ToLocalChecked());
   }
 
-  if (!Nan::New(Matrix::constructor)->HasInstance(info[0]) && !Nan::New(ExpressionTree::constructor)->HasInstance(info[0])) {
-    return Nan::ThrowError(Nan::New("EigenJs.Add - expected lhs argument to be instance of Matrix").ToLocalChecked());
+  if (!Nan::New(Matrix::constructor)->HasInstance(info[0]) && !Nan::New(ExpressionTree::constructor)->HasInstance(info[0]) && !info[0]->IsNumber()) {
+    return Nan::ThrowError(Nan::New("EigenJs.Equals - expected lhs argument to be instance of Matrix").ToLocalChecked());
   }
 
-  if (!Nan::New(Matrix::constructor)->HasInstance(info[1]) && !Nan::New(ExpressionTree::constructor)->HasInstance(info[1])) {
-    return Nan::ThrowError(Nan::New("EigenJs.Add - expected rhs argument to be instance of Matrix").ToLocalChecked());
+  if (!Nan::New(Matrix::constructor)->HasInstance(info[1]) && !Nan::New(ExpressionTree::constructor)->HasInstance(info[1]) && !info[1]->IsNumber()) {
+    return Nan::ThrowError(Nan::New("EigenJs.Equals - expected rhs argument to be instance of Matrix").ToLocalChecked());
   }
 
   std::shared_ptr<AbstractExpression> lhs;
@@ -262,7 +316,7 @@ NAN_METHOD(Equals)
   if (Nan::New(Matrix::constructor)->HasInstance(info[0]))
   {
     Matrix* m = Nan::ObjectWrap::Unwrap<Matrix>(info[0]->ToObject());
-    lhs = std::make_shared<TerminalMatrixExpression>(m->InnerMatrix());
+    lhs = std::make_shared<TerminalExpression>(m->InnerMatrix());
     lhsType.From(m);
   }
   else if (Nan::New(ExpressionTree::constructor)->HasInstance(info[0]))
@@ -271,13 +325,18 @@ NAN_METHOD(Equals)
     lhs = tree->GetExpr();
     lhsType.From(tree);
   }
+  else if (info[0]->IsNumber())
+  {
+    lhs = std::make_shared<TerminalExpression>(info[0]->NumberValue());
+    lhsType.From(info[0]->NumberValue());
+  }
 
   std::shared_ptr<AbstractExpression> rhs;
   ExpressionType rhsType;
   if (Nan::New(Matrix::constructor)->HasInstance(info[1]))
   {
     Matrix* m = Nan::ObjectWrap::Unwrap<Matrix>(info[1]->ToObject());
-    rhs = std::make_shared<TerminalMatrixExpression>(m->InnerMatrix());
+    rhs = std::make_shared<TerminalExpression>(m->InnerMatrix());
     rhsType.From(m);
   }
   else if (Nan::New(ExpressionTree::constructor)->HasInstance(info[1]))
@@ -285,6 +344,11 @@ NAN_METHOD(Equals)
     ExpressionTree* tree = Nan::ObjectWrap::Unwrap<ExpressionTree>(info[1]->ToObject());
     rhs = tree->GetExpr();
     rhsType.From(tree);
+  }
+  else if (info[1]->IsNumber())
+  {
+    rhs = std::make_shared<TerminalExpression>(info[1]->NumberValue());
+    rhsType.From(info[1]->NumberValue());
   }
 
 

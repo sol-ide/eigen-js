@@ -22,8 +22,8 @@ public:
 
   ExpressionType();
 
+  void From(double scalar);
   void From(Matrix* m);
-
   void From(ExpressionTree* tree);
 
   std::size_t GetRows() const;
