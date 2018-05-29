@@ -32,5 +32,46 @@ describe("Eigen Constructors", () => {
       ])
     );
   });
+
+  it("Test Ones Construction", () => {
+    let m1 = eigen.Matrix.Ones( 4, 4 );
+
+    let expectedMatrix = new eigen.Matrix(
+      4, 4,
+      new Float64Array([
+        1, 1, 1, 1,
+        1, 1, 1, 1,
+        1, 1, 1, 1,
+        1, 1, 1, 1
+      ])
+    )
+
+    expect( eigen.equals( m1, expectedMatrix ).eval() ).to.be.true;
+
+
+    let v1 = eigen.RowVector.Ones( 4 );
+
+    let expectedRowVector = new eigen.RowVector(
+      new Float64Array([
+        1, 1, 1, 1
+      ])
+    )
+
+    expect( eigen.equals( v1, expectedRowVector ).eval() ).to.be.true;
+
+
+    let v2 = eigen.ColumnVector.Ones( 4 );
+
+    let expectedColumnVector = new eigen.ColumnVector(
+      new Float64Array([
+        1,
+        1,
+        1,
+        1
+      ])
+    )
+
+    expect( eigen.equals( v2, expectedColumnVector ).eval() ).to.be.true;
+  });
 });
 

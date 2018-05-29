@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <memory>
 
+
 class Matrix : public Nan::ObjectWrap
 {
 public:
@@ -12,6 +13,9 @@ public:
 public:
 
   Matrix(std::size_t rows, std::size_t columns, const double* data);
+
+  template< typename Generator >
+  Matrix(std::size_t rows, std::size_t columns, Generator generator);
   
   static NAN_MODULE_INIT(Init);
 
@@ -20,6 +24,8 @@ public:
 
   static NAN_METHOD(New);
   static NAN_METHOD(ToString);
+
+  static NAN_METHOD(Ones);
 
   static Nan::Persistent<v8::FunctionTemplate> constructor;
 
@@ -37,3 +43,5 @@ public:
 private:
   EigenMatrixPtr matrix_;
 };
+
+#include "Matrix.hxx"

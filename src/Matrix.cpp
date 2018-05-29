@@ -1,7 +1,11 @@
 #include "Matrix.hpp"
+#include "MatrixGeneration.hpp"
 #include <memory>
 
+
+
 Nan::Persistent<v8::FunctionTemplate> Matrix::constructor;
+
 
 Matrix::Matrix(std::size_t rows, std::size_t columns, const double* data)
 {
@@ -19,7 +23,7 @@ Matrix::Matrix(std::size_t rows, std::size_t columns, const double* data)
 
 /* virtual */ const std::string& Matrix::GetName() const
 {
-  static const std::string name;
+  static const std::string name = "Matrix";
   return name;
 }
 
@@ -62,6 +66,8 @@ NAN_MODULE_INIT(Matrix::Init)
 
   Nan::SetPrototypeMethod(ctor, "toString", ToString);
 
+  Nan::SetMethod(ctor, "Ones", Ones);
+
   target->Set(Nan::New("Matrix").ToLocalChecked(), ctor->GetFunction());
 }
 
@@ -82,32 +88,78 @@ NAN_METHOD(Matrix::New) {
   }
 
   // expect arguments to be numbers
-  if (info.Length() > 2 && !info[2]->IsFloat64Array()) {
+  if (info.Length() > 2 && (!info[2]->IsFloat64Array() && !Nan::New(Zeros::constructor)->HasInstance(info[2]) && !Nan::New(Ones::constructor)->HasInstance(info[2]))) {
 	  return Nan::ThrowError(Nan::New("Matrix::New - expected last argument to be a float 64 array").ToLocalChecked());
   }
 
   // create a new instance and wrap our javascript instance
 
-
   std::size_t rows = info[0]->NumberValue();
   std::size_t columns = info[1]->NumberValue();
-  double* data = nullptr;
-  std::size_t length = 0;
-  if (info.Length() > 2)
+
+  Matrix* m = nullptr;
+  if(info.Length() > 2 && Nan::New(Ones::constructor)->HasInstance(info[2]))
   {
-    data = reinterpret_cast<double*>(info[2].As<v8::Float64Array>()->Buffer()->GetContents().Data());
-    length = info[2].As<v8::Float64Array>()->Buffer()->GetContents().ByteLength() / sizeof(double);
+    m = new Matrix(rows, columns, Generation::Fill<double>(1));
+  }
+  else if (info.Length() > 2 && Nan::New(Zeros::constructor)->HasInstance(info[2]))
+  {
+    m = new Matrix(rows, columns, Generation::Fill<double>(0));
+  }
+  else
+  {
+    const double* data = nullptr;
+    std::size_t length = 0;
+    if (info.Length() > 2)
+    {
+      data = reinterpret_cast<const double*>(info[2].As<v8::Float64Array>()->Buffer()->GetContents().Data());
+      length = info[2].As<v8::Float64Array>()->Buffer()->GetContents().ByteLength() / sizeof(double);
+    }
+
+    if (length != rows * columns)
+    {
+      return Nan::ThrowError(Nan::New("Matrix::New - expected array size = rows x columns").ToLocalChecked());
+    }
+
+    m = new Matrix(rows, columns, data);
   }
 
-  if (length != rows * columns) {
-    return Nan::ThrowError(Nan::New("Matrix::New - expected array size = rows x columns").ToLocalChecked());
-  }
-
-  Matrix* m = new Matrix(rows, columns, data);
   m->Wrap(info.Holder());
 
   // return the wrapped javascript instance
   info.GetReturnValue().Set(info.Holder());
+}
+
+NAN_METHOD(Matrix::Ones)
+{
+  // expect exactly 3 arguments
+  if (info.Length() != 2) {
+    return Nan::ThrowError(Nan::New("Matrix::Ones - expected arguments rows, columns").ToLocalChecked());
+  }
+
+  // expect arguments to be numbers
+  if (!info[0]->IsNumber() || !info[1]->IsNumber()) {
+    return Nan::ThrowError(Nan::New("Matrix::Ones - expected arguments to be numbers").ToLocalChecked());
+  }
+
+  // create a new instance and wrap our javascript instance
+
+  v8::Local<v8::Function> onesFunc = Nan::New(Ones::constructor)->GetFunction();
+  v8::Local<v8::Object> onesJs = Nan::NewInstance(onesFunc).ToLocalChecked();
+
+  const int argc = 3;
+  v8::Local<v8::Value> argv[argc] = {
+    info[0],
+    info[1],
+    onesJs
+  };
+
+
+  v8::Local<v8::Function> constructorFunc = Nan::New(Matrix::constructor)->GetFunction();
+  v8::Local<v8::Object> matrixJs = Nan::NewInstance(constructorFunc, argc, argv).ToLocalChecked();
+
+
+  info.GetReturnValue().Set(matrixJs);
 }
 
 NAN_METHOD(Matrix::ToString)

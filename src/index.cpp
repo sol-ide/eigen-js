@@ -1,5 +1,6 @@
 #include <nan.h>
 #include "Matrix.hpp"
+#include "MatrixGeneration.hpp"
 #include "RowVector.hpp"
 #include "ColumnVector.hpp"
 #include "ExpressionTree.hpp"
@@ -7,6 +8,9 @@
 
 NAN_MODULE_INIT(InitModule)
 {
+  Zeros::Init(target);
+  Ones::Init(target);
+
   Matrix::Init(target);
   RowVector::Init(target);
   ColumnVector::Init(target);
